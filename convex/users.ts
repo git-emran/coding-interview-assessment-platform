@@ -14,12 +14,18 @@ export const syncUser = mutation({
       .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
       .first();
 
-    if (existingUser) return;
+    if (existingUser) {
+      console.log("User already exists:", existingUser);
+      return existingUser; // Return the existing user
+    }
 
-    return await ctx.db.insert("users", {
+    const newUser = await ctx.db.insert("users", {
       ...args,
-      role: "candidate",
+      role: "interviewer",
     });
+
+    console.log("Created new user:", newUser);
+    return newUser;
   },
 });
 
@@ -27,9 +33,7 @@ export const getUsers = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("User is not authenticated");
-
     const users = await ctx.db.query("users").collect();
-
     return users;
   },
 });
@@ -41,7 +45,6 @@ export const getUserByClerkId = query({
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .first();
-
     return user;
   },
 });
